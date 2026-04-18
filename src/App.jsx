@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { Terminal, Shield, Search, Map, Globe, Wifi, Lock, AlertTriangle, ChevronRight, Play, Square, Radio, Zap, Key, Radar, Bug, Database, Eye, Settings, Target } from 'lucide-react'
 import NmapModule from './components/NmapModule.jsx'
 import ShodanModule from './components/ShodanModule.jsx'
@@ -13,6 +14,9 @@ import NexposeModule from './components/NexposeModule.jsx'
 import ZapModule from './components/ZapModule.jsx'
 import BurpSuiteModule from './components/BurpSuiteModule.jsx'
 import WPScanModule from './components/WPScanModule.jsx'
+import CRTOverlay from './components/CRTOverlay.jsx'
+import DynamicGridBackground from './components/DynamicGridBackground.jsx'
+import LiveTerminalLogs from './components/LiveTerminalLogs.jsx'
 
 function App() {
   const [activeModule, setActiveModule] = useState('nmap')
@@ -67,13 +71,23 @@ function App() {
     }
   }
 
+  /* Framer Motion glitch hover variant */
+  const glitchHover = {
+    rest: { x: 0, skewX: 0 },
+    hover: {
+      x: [0, -2, 3, -1, 2, 0],
+      skewX: [0, -0.5, 1, -0.5, 0],
+      transition: { duration: 0.4, ease: 'easeInOut' },
+    },
+  }
+
   return (
-    <div className="min-h-screen bg-cyber-black cyber-grid relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-neon-green/5 rounded-full blur-3xl animate-pulse-slow"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-neon-blue/5 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
-      </div>
+    <div className="min-h-screen bg-cyber-black relative overflow-hidden">
+      {/* Animated 3D grid background */}
+      <DynamicGridBackground />
+
+      {/* CRT Overlay (scanlines + vignette) */}
+      <CRTOverlay />
 
       {/* Header */}
       <header className="relative z-10 border-b border-neon-green/30 backdrop-blur-sm">
@@ -105,7 +119,7 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 container mx-auto px-4 py-6">
+      <main className="relative z-10 container mx-auto px-4 py-6 pb-48">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar - Module Selection */}
           <aside className="lg:col-span-1">
@@ -116,10 +130,13 @@ function App() {
               </h2>
               <div className="space-y-2">
                 {modules.map((module) => (
-                  <button
+                  <motion.button
                     key={module.id}
                     onClick={() => setActiveModule(module.id)}
-                    className={`w-full p-3 rounded-lg flex items-center gap-3 transition-all duration-300 ${
+                    variants={glitchHover}
+                    initial="rest"
+                    whileHover="hover"
+                    className={`glitch-hover w-full p-3 rounded-lg flex items-center gap-3 transition-all duration-300 ${
                       activeModule === module.id
                         ? `bg-${module.color}/20 border-${module.color} border`
                         : 'bg-cyber-gray/50 border-gray-700 hover:border-gray-500'
@@ -139,7 +156,7 @@ function App() {
                     {activeModule === module.id && (
                       <ChevronRight className={`w-4 h-4 text-${module.color}`} />
                     )}
-                  </button>
+                  </motion.button>
                 ))}
               </div>
 
@@ -157,13 +174,19 @@ function App() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Vulnerabilities</span>
-                    <span className="text-neon-red">23</span>
+                    <motion.span
+                      className="text-neon-red"
+                      animate={{ opacity: [1, 0.4, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      23
+                    </motion.span>
                   </div>
                 </div>
               </div>
 
               {/* Warning */}
-              <div className="mt-6 p-3 bg-neon-red/10 border border-neon-red/30 rounded-lg">
+              <div className="mt-6 p-3 bg-neon-red/10 border border-neon-red/30 rounded-lg emergency-blink">
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 text-neon-red flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-gray-400">
@@ -176,23 +199,35 @@ function App() {
 
           {/* Main Module Area */}
           <section className="lg:col-span-3">
-            {renderModule()}
+            <motion.div
+              key={activeModule}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              {renderModule()}
+            </motion.div>
           </section>
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-gray-800 mt-8">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center text-xs text-gray-500">
-            <span>CYBERSEC PENTESTING DASHBOARD © 2026</span>
-            <span className="flex items-center gap-2">
-              <Lock className="w-3 h-3" />
-              ENCRYPTED CONNECTION
+      {/* VIP Footer */}
+      <footer className="relative z-10 border-t border-neon-green/30 mt-8 bg-cyber-dark/60 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-5">
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-display text-neon-green vip-pulse tracking-widest">
+              [ACCESS GRANTED] <span className="text-white">//</span> VIP ALEJANDRO <span className="text-white">//</span> 2026
+            </span>
+            <span className="flex items-center gap-2 text-xs text-gray-500">
+              <Lock className="w-3 h-3 text-neon-green" />
+              <span className="text-neon-green/70">ENCRYPTED CONNECTION</span>
             </span>
           </div>
         </div>
       </footer>
+
+      {/* Live Terminal Logs (fixed at bottom) */}
+      <LiveTerminalLogs />
     </div>
   )
 }

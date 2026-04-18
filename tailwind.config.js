@@ -24,6 +24,8 @@ export default {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'glitch': 'glitch 1s linear infinite',
         'scan': 'scan 2s linear infinite',
+        'emergency': 'emergency-pulse 2s ease-in-out infinite',
+        'vip': 'vip-glow 2s ease-in-out infinite',
       },
       keyframes: {
         glitch: {
