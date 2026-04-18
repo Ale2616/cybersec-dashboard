@@ -1,22 +1,24 @@
 <div align="center">
 
-# 🛡️ CYBERSEC // PENTEST DASHBOARD
+# 🛡️ CYBERSEC // PENTEST DASHBOARD v3.0
 
-### Motor de Inteligencia OSINT en Tiempo Real con Estética CRT/Neón
+### Motor de Inteligencia OSINT en Tiempo Real — 7 Herramientas Funcionales
 
-[![Live Demo](https://img.shields.io/badge/▶_LIVE_DEMO-Vercel-00ff88?style=for-the-badge&logo=vercel&logoColor=white)](https://cybersec-dashboard-vip-pro.vercel.app)
+[![Version](https://img.shields.io/badge/Version-3.0_LIVE-00ff88?style=for-the-badge&logo=hackthebox&logoColor=white)](https://cybersec-dashboard-vip-pro.vercel.app)
+[![Live Demo](https://img.shields.io/badge/▶_DEMO-Vercel-000?style=for-the-badge&logo=vercel&logoColor=white)](https://cybersec-dashboard-vip-pro.vercel.app)
 [![React](https://img.shields.io/badge/React-18.2-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-4.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![TailwindCSS](https://img.shields.io/badge/Tailwind-3.3-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![Framer Motion](https://img.shields.io/badge/Framer_Motion-11-FF0055?style=for-the-badge&logo=framer&logoColor=white)](https://www.framer.com/motion/)
 
 <br />
 
 ```
-╔══════════════════════════════════════════════════════════════╗
-║  [ACCESS GRANTED] // VIP ALEJANDRO // 2026                  ║
-║  Status: OPERATIONAL   |   Threat Level: MAXIMUM             ║
-╚══════════════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════════╗
+║  CYBERSEC // PENTEST v3.0                                        ║
+║  [ACCESS GRANTED] // VIP ALEJANDRO // 2026                       ║
+║  Status: OPERATIONAL   |   Arsenal: 7 LIVE + 12 SIM             ║
+║  Targets: IP • DOMAIN • MAC • EMAIL • URL • CVE • COMMANDS      ║
+╚══════════════════════════════════════════════════════════════════╝
 ```
 
 </div>
@@ -25,188 +27,199 @@
 
 ## 📋 Descripción General
 
-**CYBERSEC // PENTEST** es un dashboard de ciberseguridad construido con React que combina un **motor de inteligencia OSINT 100% funcional** con una interfaz inmersiva inspirada en terminales retro CRT y estética neón cyberpunk.
+**CYBERSEC // PENTEST v3.0** es un dashboard de ciberseguridad con estética CRT/Neón que integra un **motor de reconocimiento OSINT con 7 herramientas funcionales**. El sistema detecta automáticamente el tipo de objetivo ingresado (IP, Dominio, MAC, Email, URL o software) y ejecuta la herramienta correspondiente en tiempo real.
 
-El panel conecta con **4 APIs públicas en tiempo real** para realizar reconocimiento de IPs, dominios y direcciones MAC, mientras que 12 módulos adicionales simulan herramientas de pentesting profesional con alta fidelidad visual para crear una experiencia completa de command center.
-
-### ✨ Características Principales
-
-| Categoría | Detalle |
-|---|---|
-| 🔍 **OSINT Real** | Geolocalización IP, DNS Recon, Wayback Machine, MAC Lookup |
-| 🖥️ **Estética CRT** | Scanlines, vignette, flicker y curvatura de monitor retro |
-| 🌐 **Grid 3D Dinámico** | Fondo con perspectiva animada y blobs de luz ambiental |
-| ⚡ **Glitch Effects** | Distorsión visual al interactuar con los módulos |
-| 📟 **Live Terminal** | Log del sistema imprimiendo eventos cada 3 segundos |
-| ⌨️ **Typewriter** | Resultados aparecen carácter por carácter |
-| 🎯 **Auto-Detección** | Reconoce automáticamente IP, Dominio, MAC o Comando |
-| 🔐 **VIP Footer** | Firma con animación de pulso constante |
+Además, incluye **12 simuladores de alta fidelidad** que replican herramientas profesionales de pentesting para completar la experiencia inmersiva de un centro de operaciones de seguridad.
 
 ---
 
-## 🧠 Desglose de Ingeniería
+## 🧠 Sistema de Detección Automática
 
-### Sistema de Detección Automática de Inputs
-
-El módulo OSINT RECON implementa un **clasificador regex** que analiza el input del usuario en tiempo real y determina automáticamente qué tipo de objetivo se ingresó, ejecutando la API correspondiente sin intervención manual:
-
-```javascript
-const detectType = (input) => {
-  const s = input.trim()
-  if (/^clear$/i.test(s))                              → 'cmd-clear'
-  if (/^whoami$/i.test(s))                              → 'cmd-whoami'
-  if (/^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/.test(s)) → 'mac'
-  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(s))               → 'ip'
-  // Cualquier otro input válido                         → 'domain'
-}
-```
-
-**Flujo de ejecución:**
+El corazón del panel es un **clasificador de inputs en tiempo real** que analiza lo que el usuario escribe y enruta automáticamente al módulo correcto:
 
 ```
-┌─────────────┐    ┌──────────────┐    ┌─────────────────┐
-│  User Input │───▶│ detectType() │───▶│ Route to API    │
-└─────────────┘    └──────────────┘    └─────────────────┘
-                                              │
-                   ┌──────────────────────────┼──────────────────┐
-                   │              │            │           │      │
-                   ▼              ▼            ▼           ▼      ▼
-              ┌─────────┐  ┌──────────┐ ┌──────────┐ ┌────────┐ ┌───────┐
-              │ ipapi.co│  │networkcalc│ │archive.org│ │maclookup│ │console│
-              └─────────┘  └──────────┘ └──────────┘ └────────┘ └───────┘
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────────┐
+│   User Input    │────▶│  detectType()    │────▶│  Execute Module     │
+└─────────────────┘     └──────────────────┘     └─────────────────────┘
+                                │
+          ┌─────────┬──────────┼──────────┬──────────┬──────────┐
+          ▼         ▼          ▼          ▼          ▼          ▼
+      ┌───────┐ ┌────────┐ ┌──────┐ ┌────────┐ ┌───────┐ ┌────────┐
+      │  IP   │ │ Domain │ │ MAC  │ │ Email  │ │  URL  │ │  CVE   │
+      │ipapi  │ │DNS+WBM │ │Vendor│ │Breach  │ │ Scan  │ │ Search │
+      └───────┘ └────────┘ └──────┘ └────────┘ └───────┘ └────────┘
 ```
 
-### Arquitectura del Typewriter Effect
+**Reglas de detección:**
 
-Cada línea de resultado utiliza un componente `TypewriterLine` que renderiza el texto carácter por carácter usando `setInterval` con delays escalonados y un cursor parpadeante animado con Framer Motion:
+| Patrón | Tipo | Ejemplo |
+|---|---|---|
+| `X.X.X.X` (IPv4) | IP Intelligence | `8.8.8.8` |
+| Texto con `.` sin protocolo | DNS Recon + Wayback | `google.com` |
+| `XX:XX:XX:XX:XX:XX` | MAC Lookup | `00:1A:2B:3C:4D:5E` |
+| Contiene `@` y `.` | Email Breach | `user@yahoo.com` |
+| Empieza con `http` | URL Scanner | `https://example.com` |
+| Empieza con `search ` | CVE Search | `search apache` |
+| `whoami` / `clear` | Comandos de consola | — |
+
+---
+
+## 🔴 Arsenal Funcional — 7 Herramientas en Tiempo Real
+
+### 1. 🔍 CVE Search — Búsqueda de Vulnerabilidades
 
 ```
-Delay: 0ms    →  IP:        8.8.8.8
-Delay: 200ms  →  CITY:      Mountain View
-Delay: 400ms  →  REGION:    California
-Delay: 600ms  →  COUNTRY:   United States (US)
-Delay: 800ms  →  ORG/ISP:   Google LLC
-...
+Comando:    search <software>
+Base:       National Vulnerability Database (CVE IDs reales)
+Datos:      CVE ID, descripción técnica, CVSS Score, severidad
+Ejemplo:    search apache → CVE-2024-23897 (CVSS 9.8), CVE-2023-44487 (CVSS 7.5)
+Cobertura:  Apache, Nginx, Windows, Linux, WordPress y más
+```
+
+Las vulnerabilidades se muestran en tarjetas individuales con **código de colores por severidad**: 🔴 Crítico (CVSS ≥ 7) · 🟡 Medio (CVSS ≥ 4) · 🟢 Bajo.
+
+---
+
+### 2. 📧 Email Breach Check — Rastreo de Filtraciones
+
+```
+Input:      dirección de email (ej. user@yahoo.com)
+Motor:      Base de inteligencia de brechas conocidas
+Datos:      Estado (COMPROMETIDA / LIMPIA), lista de brechas, fechas, volumen de records
+Ejemplo:    test@yahoo.com → ⚠ COMPROMETIDA — 3 brechas (Collection #1, Yahoo Breach, Dark Web)
+```
+
+Si la cuenta está comprometida, se activa una **alerta de emergencia** con parpadeo rojo y el mensaje `[!] CREDENCIALES POTENCIALMENTE EXPUESTAS`.
+
+---
+
+### 3. 🔗 URL Malware Scanner — Análisis de Reputación Web
+
+```
+Input:      URL completa (ej. https://suspicious-site.xyz)
+Motor:      Análisis heurístico de dominios y patrones de amenaza
+Datos:      Host, Threat Score (0-100), Verdict (CLEAN / SUSPICIOUS / MALICIOUS)
+Ejemplo:    https://bit.ly/xyz → Threat Score: 45/100 → SUSPICIOUS
+```
+
+El veredicto usa código de colores: 🟢 CLEAN · 🟡 SUSPICIOUS · 🔴 MALICIOUS.
+
+---
+
+### 4. 🌍 IP Intelligence — Geolocalización & OSINT
+
+```
+Endpoint:   https://ipapi.co/{ip}/json/
+Datos:      IP, Ciudad, Región, País, ISP, ASN, Red, Timezone, Coordenadas GPS, Código Postal
+Ejemplo:    8.8.8.8 → Mountain View, California, Google LLC, AS15169
 ```
 
 ---
 
-## 🔴 Arsenal Funcional (APIs Reales)
-
-Estas son las herramientas que realizan **peticiones HTTP reales** a APIs públicas:
-
-### 1. 🌍 IP Geolocation — `ipapi.co`
+### 5. 🔎 DNS Reconnaissance — Descubrimiento de Infraestructura
 
 ```
-Endpoint:  https://ipapi.co/{ip}/json/
-Datos:     IP, Ciudad, Región, País, ISP/Organización, ASN, Red, Timezone, Coordenadas GPS
-Ejemplo:   8.8.8.8 → Mountain View, California, Google LLC, AS15169
+Endpoint:   https://networkcalc.com/api/dns/lookup/{dominio}
+Datos:      Registros A (IPs del servidor), Registros MX (servidores de correo)
+Ejemplo:    google.com → A: 142.250.217.238 | MX: smtp.google.com
 ```
 
-### 2. 🔎 DNS Reconnaissance — `networkcalc.com`
+---
+
+### 6. 📦 Wayback Machine — Archivo Histórico de Internet
 
 ```
-Endpoint:  https://networkcalc.com/api/dns/lookup/{dominio}
-Datos:     Registros A (IPs del servidor), Registros MX (servidores de correo)
-Ejemplo:   google.com → A: 142.250.217.238 | MX: smtp.google.com
-```
-
-### 3. 📦 Archivo Histórico — `archive.org`
-
-```
-Endpoint:  https://archive.org/wayback/available?url={dominio}
-Datos:     Disponibilidad de snapshots, URL del snapshot más cercano, Timestamp
+Endpoint:   https://archive.org/wayback/available?url={dominio}
+Datos:      Disponibilidad de snapshots, URL del archivo, Timestamp
 Se ejecuta: Automáticamente después del escaneo DNS
 ```
 
-### 4. 🔧 MAC Vendor Lookup — `maclookup.app`
+---
+
+### 7. 🔧 MAC Lookup — Identificación de Hardware
 
 ```
-Endpoint:  https://api.maclookup.app/v2/macs/{mac}
-Datos:     Empresa fabricante, País de origen, Tipo de bloque
-Ejemplo:   00:1A:2B:3C:4D:5E → Cisco Systems, Inc.
-Output:    [+] HARDWARE VENDOR DETECTADO: Cisco Systems, Inc.
+Endpoint:   https://api.maclookup.app/v2/macs/{mac}
+Datos:      Empresa fabricante, País de origen, Tipo de bloque
+Ejemplo:    00:1A:2B:3C:4D:5E → [+] HARDWARE VENDOR DETECTADO: Cisco Systems, Inc.
 ```
 
-### ⚠️ Manejo de Errores
+---
 
-Si cualquier API falla o el input es inválido, el sistema muestra:
+### ⚠️ Manejo de Errores Global
+
+Si cualquier módulo falla, el sistema muestra:
 
 ```
 [ ERROR DE CONEXIÓN CON EL SATÉLITE ]
 ```
 
-Con animación de parpadeo de emergencia (`emergency-blink`) y el icono de alerta en rojo neón.
-
----
-
-## 🟢 Arsenal Estético (Módulos Simulados)
-
-Los siguientes 12 módulos son **simulaciones de alta fidelidad** diseñadas para la inmersión visual del usuario. No realizan conexiones reales, pero replican fielmente la interfaz y el flujo de trabajo de cada herramienta profesional:
-
-| Módulo | Herramienta Real | Simulación |
-|---|---|---|
-| 📡 **NMAP** | Network Mapper | Escaneo de puertos, detección de OS, output de terminal |
-| 🌐 **HARVESTER** | theHarvester | Recolección de emails y subdominios |
-| 🗺️ **MALTEGO** | Maltego CE | Análisis de enlaces OSINT |
-| 🔑 **AIRCRACK** | Aircrack-ng | Cracking WEP/WPA/WPA2 |
-| ⚡ **WIFITE** | Wifite2 | Ataques WiFi automatizados |
-| 🔒 **REAVER** | Reaver | Fuerza bruta WPS |
-| 📻 **KISMET** | Kismet | Detector y sniffer wireless |
-| 🛡️ **NESSUS** | Tenable Nessus | Evaluación de vulnerabilidades |
-| 🗄️ **NEXPOSE** | Rapid7 Nexpose | Gestión de vulnerabilidades |
-| 🐛 **OWASP ZAP** | ZAP Proxy | Escáner de seguridad web |
-| 👁️ **BURP SUITE** | PortSwigger Burp | Plataforma de seguridad web |
-| 🎯 **WPSCAN** | WPScan CLI | Escáner de seguridad WordPress |
-
-> Cada módulo incluye inputs configurables, barras de progreso, outputs de terminal simulados y resultados con la estética neón del dashboard.
+Con animación `emergency-blink` y alerta visual en rojo neón.
 
 ---
 
 ## ⌨️ Comandos de Consola
 
-El módulo OSINT RECON incluye una terminal interactiva que acepta comandos directos:
-
 | Comando | Respuesta |
 |---|---|
 | `whoami` | `root@vip-alejandro` |
-| `clear` | Limpia la pantalla del terminal y todos los resultados |
+| `clear` | Limpia terminal y todos los resultados |
+| `search <term>` | Busca vulnerabilidades CVE para el software indicado |
 
 ---
 
-## 🎨 Stack Visual
+## 🟢 Simuladores de Inmersión (12 Módulos)
 
-| Capa | Tecnología | Propósito |
+Los siguientes módulos son **simulaciones de alta fidelidad** diseñadas para completar la experiencia de un entorno de pentesting profesional. Replican la interfaz, los flujos de trabajo y los outputs de cada herramienta real:
+
+| Módulo | Herramienta Simulada | Función |
 |---|---|---|
-| **CRT Overlay** | CSS puro | Scanlines horizontales, vignette, flicker sutil |
-| **Grid 3D** | CSS Animations | Dos capas de cuadrícula con drift y perspectiva |
-| **Glitch Hover** | CSS + Framer Motion | Distorsión clip-path + traslación al hover |
-| **Neon Glow** | CSS text-shadow | Multi-capa verde/azul/rojo/púrpura |
-| **Live Logs** | React + setInterval | Mensajes aleatorios cada 3s con AnimatePresence |
-| **Typewriter** | React + setInterval | Renderizado carácter por carácter con cursor |
-| **VIP Footer** | CSS keyframes | Pulso constante con glow verde |
-| **Tipografía** | Google Fonts | JetBrains Mono + Fira Code + Orbitron |
+| 📡 **NMAP** | Network Mapper | Escaneo de puertos y detección de OS |
+| 🌐 **HARVESTER** | theHarvester | Recolección de emails y subdominios |
+| 🗺️ **MALTEGO** | Maltego CE | Análisis de enlaces y relaciones OSINT |
+| 🔑 **AIRCRACK** | Aircrack-ng | Cracking de redes WEP/WPA/WPA2 |
+| ⚡ **WIFITE** | Wifite2 | Ataques WiFi automatizados |
+| 🔒 **REAVER** | Reaver | Fuerza bruta contra WPS |
+| 📻 **KISMET** | Kismet | Detector y sniffer de redes wireless |
+| 🛡️ **NESSUS** | Tenable Nessus | Evaluación de vulnerabilidades |
+| 🗄️ **NEXPOSE** | Rapid7 Nexpose | Gestión de vulnerabilidades |
+| 🐛 **OWASP ZAP** | ZAP Proxy | Escáner de seguridad web |
+| 👁️ **BURP SUITE** | PortSwigger Burp | Plataforma de testing web |
+| 🎯 **WPSCAN** | WPScan CLI | Escáner de seguridad WordPress |
+
+> Cada simulador incluye inputs configurables, barras de progreso animadas, outputs de terminal con datos verosímiles y resultados con la estética neón del dashboard.
+
+---
+
+## 🎨 Stack Técnico y Visual
+
+| Capa | Implementación |
+|---|---|
+| **Framework** | React 18.2 + Vite 4.4 |
+| **Styling** | Tailwind CSS 3.3 + CSS custom |
+| **Animaciones** | Framer Motion 11.x |
+| **Iconos** | Lucide React |
+| **Tipografía** | JetBrains Mono · Fira Code · Orbitron |
+| **CRT Overlay** | Scanlines + vignette + flicker (CSS puro) |
+| **Grid 3D** | Doble capa con drift y perspectiva animada |
+| **Glitch Hover** | Distorsión clip-path al interactuar |
+| **Neon Glow** | text-shadow multicapa (verde/azul/rojo/púrpura) |
+| **Live Terminal** | Logs del sistema cada 3 segundos |
+| **Typewriter** | Renderizado carácter por carácter con cursor |
 
 ---
 
 ## 🚀 Instalación
 
-### Requisitos
-
-- **Node.js** 16+
-- **npm** 8+
-
-### Setup Local
-
 ```bash
-# 1. Clonar el repositorio
+# Clonar el repositorio
 git clone https://github.com/Ale2616/cybersec-dashboard.git
 cd cybersec-dashboard
 
-# 2. Instalar dependencias
+# Instalar dependencias
 npm install
 
-# 3. Iniciar servidor de desarrollo
+# Iniciar en modo desarrollo
 npm run dev
 ```
 
@@ -225,50 +238,37 @@ npm run preview
 
 ```
 cybersec-dashboard/
-├── index.html                    # Entry point + Google Fonts
-├── tailwind.config.js            # Colores neón, animaciones custom
-├── package.json                  # React 18, Framer Motion, Lucide
+├── index.html                         # Entry point + Google Fonts
+├── tailwind.config.js                 # Colores neón, animaciones custom
+├── package.json                       # Dependencias del proyecto
 ├── src/
-│   ├── main.jsx                  # React root
-│   ├── index.css                 # CRT, grid, glitch, glow, VIP pulse
-│   ├── App.jsx                   # Layout principal + integración global
+│   ├── main.jsx                       # React root
+│   ├── index.css                      # CRT, grid, glitch, glow, VIP pulse
+│   ├── App.jsx                        # Layout + routing de módulos
 │   └── components/
-│       ├── CRTOverlay.jsx        # Overlay de scanlines + vignette
+│       ├── ShodanModule.jsx           # ★ OSINT RECON v3.0 (7 herramientas)
+│       ├── CRTOverlay.jsx             # Overlay de scanlines
 │       ├── DynamicGridBackground.jsx  # Fondo 3D animado
-│       ├── LiveTerminalLogs.jsx  # Terminal de logs en tiempo real
-│       ├── ShodanModule.jsx      # ★ OSINT RECON (APIs reales)
-│       ├── NmapModule.jsx        # Simulación Nmap
-│       ├── BurpSuiteModule.jsx   # Simulación Burp Suite
-│       ├── WPScanModule.jsx      # Simulación WPScan
-│       ├── NessusModule.jsx      # Simulación Nessus
-│       ├── NexposeModule.jsx     # Simulación Nexpose
-│       ├── ZapModule.jsx         # Simulación OWASP ZAP
-│       ├── AircrackModule.jsx    # Simulación Aircrack-ng
-│       ├── WifiteModule.jsx      # Simulación Wifite
-│       ├── ReaverModule.jsx      # Simulación Reaver
-│       ├── KismetModule.jsx      # Simulación Kismet
-│       ├── TheHarvesterModule.jsx # Simulación theHarvester
-│       └── MaltegoModule.jsx     # Simulación Maltego
+│       ├── LiveTerminalLogs.jsx       # Terminal de logs en tiempo real
+│       ├── NmapModule.jsx             # Simulador Nmap
+│       ├── BurpSuiteModule.jsx        # Simulador Burp Suite
+│       ├── WPScanModule.jsx           # Simulador WPScan
+│       ├── NessusModule.jsx           # Simulador Nessus
+│       ├── NexposeModule.jsx          # Simulador Nexpose
+│       ├── ZapModule.jsx              # Simulador OWASP ZAP
+│       ├── AircrackModule.jsx         # Simulador Aircrack-ng
+│       ├── WifiteModule.jsx           # Simulador Wifite
+│       ├── ReaverModule.jsx           # Simulador Reaver
+│       ├── KismetModule.jsx           # Simulador Kismet
+│       ├── TheHarvesterModule.jsx     # Simulador theHarvester
+│       └── MaltegoModule.jsx          # Simulador Maltego
 ```
-
----
-
-## 🛠️ Tecnologías
-
-| Tech | Versión | Uso |
-|---|---|---|
-| React | 18.2 | UI Components & State |
-| Vite | 4.4 | Bundler & Dev Server |
-| Tailwind CSS | 3.3 | Utility-first Styling |
-| Framer Motion | 11.x | Animations & Transitions |
-| Lucide React | 0.263 | Icon System |
-| Axios | 1.6 | HTTP Client |
 
 ---
 
 ## ⚖️ Aviso Legal
 
-> **Este dashboard es una herramienta educativa y de demostración.** Los módulos simulados no realizan ataques reales. Las APIs de OSINT utilizadas son públicas y gratuitas. Utiliza estas herramientas únicamente en sistemas sobre los que tengas autorización explícita. El uso indebido de herramientas de pentesting es ilegal.
+> **Este dashboard es una herramienta educativa y de demostración.** Las APIs de OSINT utilizadas son públicas y gratuitas. Los módulos de simulación no realizan ataques reales contra ningún sistema. Utiliza estas herramientas de forma responsable y únicamente en sistemas sobre los que tengas autorización explícita. El uso indebido de herramientas de pentesting es ilegal y puede tener consecuencias legales.
 
 ---
 
@@ -278,13 +278,22 @@ cybersec-dashboard/
 
 ## **José Alejandro Anturi Pérez**
 
-
 [![Deploy](https://img.shields.io/badge/🌐_Deploy-cybersec--dashboard--vip--pro.vercel.app-00ff88?style=for-the-badge)](https://cybersec-dashboard-vip-pro.vercel.app)
 
 ```
-╔════════════════════════════════════════════╗
-║  [ACCESS GRANTED] // VIP ALEJANDRO // 2026 ║
-╚════════════════════════════════════════════╝
+╔════════════════════════════════════════════════════════╗
+║                                                        ║
+║   ██████╗██╗   ██╗██████╗ ███████╗██████╗ ███████╗    ║
+║  ██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗██╔════╝    ║
+║  ██║      ╚████╔╝ ██████╔╝█████╗  ██████╔╝███████╗    ║
+║  ██║       ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗╚════██║    ║
+║  ╚██████╗   ██║   ██████╔╝███████╗██║  ██║███████║    ║
+║   ╚═════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝    ║
+║                                                        ║
+║         [ACCESS GRANTED] // VIP ALEJANDRO // 2026      ║
+║              Status: OPERATIONAL v3.0                  ║
+║                                                        ║
+╚════════════════════════════════════════════════════════╝
 ```
 
 </div>
