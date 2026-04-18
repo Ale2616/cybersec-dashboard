@@ -1,360 +1,400 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Globe, Server, MapPin, Shield, AlertTriangle, Wifi, Building2, Hash, Activity } from 'lucide-react'
+import { Search, Globe, Server, MapPin, Shield, AlertTriangle, Wifi, Building2, Activity, Terminal, Clock, Cpu, Archive } from 'lucide-react'
 
-/* ── Glitch loading messages ── */
-const LOADING_MESSAGES = [
+/* ── Loading messages ── */
+const LOADING_MSGS = [
   '[ INTERCEPTANDO TRÁFICO... ]',
   '[ ESTABLECIENDO CONEXIÓN... ]',
   '[ BYPASS DE FIREWALL... ]',
   '[ RESOLVIENDO DNS... ]',
   '[ ESCANEANDO PUERTOS... ]',
   '[ ANALIZANDO PAQUETES... ]',
-  '[ TRAZANDO RUTA... ]',
+  '[ ACCEDIENDO AL SATÉLITE... ]',
 ]
 
-/* ── Typewriter line component ── */
-const TypewriterLine = ({ label, value, delay = 0, color = 'text-neon-green' }) => {
-  const [displayedText, setDisplayedText] = useState('')
-  const fullText = String(value)
+/* ── Detect input type ── */
+const detectType = (input) => {
+  const s = input.trim()
+  if (/^clear$/i.test(s)) return 'cmd-clear'
+  if (/^whoami$/i.test(s)) return 'cmd-whoami'
+  if (/^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/.test(s)) return 'mac'
+  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(s)) return 'ip'
+  // treat anything else as domain (strip protocol/path)
+  if (s.length > 0) return 'domain'
+  return null
+}
 
+const extractDomain = (input) => {
+  let d = input.trim().replace(/^https?:\/\//i, '')
+  d = d.split('/')[0].split('?')[0]
+  return d
+}
+
+/* ── Typewriter line ── */
+const TypewriterLine = ({ label, value, delay = 0, color = 'text-neon-green' }) => {
+  const [txt, setTxt] = useState('')
+  const full = String(value)
   useEffect(() => {
-    setDisplayedText('')
+    setTxt('')
     let i = 0
-    const startTimeout = setTimeout(() => {
-      const interval = setInterval(() => {
+    const t = setTimeout(() => {
+      const iv = setInterval(() => {
         i++
-        setDisplayedText(fullText.slice(0, i))
-        if (i >= fullText.length) clearInterval(interval)
-      }, 30)
-      return () => clearInterval(interval)
+        setTxt(full.slice(0, i))
+        if (i >= full.length) clearInterval(iv)
+      }, 25)
+      return () => clearInterval(iv)
     }, delay)
-    return () => clearTimeout(startTimeout)
-  }, [fullText, delay])
+    return () => clearTimeout(t)
+  }, [full, delay])
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -15 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: delay / 1000, duration: 0.3 }}
-      className="flex items-start gap-3 py-2 border-b border-gray-800/60 last:border-0"
-    >
-      <span className="text-gray-500 text-xs uppercase tracking-wider w-28 flex-shrink-0 pt-0.5 font-display">
-        {label}
-      </span>
+    <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: delay / 1000, duration: 0.25 }}
+      className="flex items-start gap-3 py-1.5 border-b border-gray-800/50 last:border-0">
+      <span className="text-gray-500 text-xs uppercase tracking-wider w-28 flex-shrink-0 pt-0.5 font-display">{label}</span>
       <span className={`font-mono text-sm ${color}`}>
-        {displayedText}
-        {displayedText.length < fullText.length && (
-          <span className="inline-block w-2 h-4 bg-neon-green/80 ml-0.5 animate-pulse" />
-        )}
+        {txt}
+        {txt.length < full.length && <span className="inline-block w-2 h-4 bg-neon-green/80 ml-0.5 animate-pulse" />}
       </span>
     </motion.div>
   )
 }
 
+/* ── Section header ── */
+const SectionHeader = ({ icon: Icon, title, color = 'text-neon-green', badge }) => (
+  <div className="flex items-center gap-3 mb-3">
+    <div className="w-2.5 h-2.5 rounded-full bg-current animate-pulse" style={{ color: 'inherit' }} />
+    <Icon className={`w-4 h-4 ${color}`} />
+    <h3 className={`text-sm font-display ${color} neon-text tracking-widest`}>{title}</h3>
+    {badge && <span className="ml-auto text-xs font-mono text-gray-500">{badge}</span>}
+  </div>
+)
+
 const ShodanModule = ({ isScanning }) => {
   const [query, setQuery] = useState('')
-  const [result, setResult] = useState(null)
   const [searching, setSearching] = useState(false)
+  const [loadingMsg, setLoadingMsg] = useState(LOADING_MSGS[0])
   const [error, setError] = useState(null)
-  const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0])
-  const [terminalLines, setTerminalLines] = useState([])
+  // Results states
+  const [ipResult, setIpResult] = useState(null)
+  const [dnsResult, setDnsResult] = useState(null)
+  const [waybackResult, setWaybackResult] = useState(null)
+  const [macResult, setMacResult] = useState(null)
+  const [detectedType, setDetectedType] = useState(null)
+  // Terminal
+  const [termLines, setTermLines] = useState([])
+  const scrollRef = useRef(null)
 
-  /* ── Cycle loading messages while searching ── */
   useEffect(() => {
     if (!searching) return
     let idx = 0
-    const interval = setInterval(() => {
-      idx = (idx + 1) % LOADING_MESSAGES.length
-      setLoadingMsg(LOADING_MESSAGES[idx])
-    }, 800)
-    return () => clearInterval(interval)
+    const iv = setInterval(() => { idx = (idx + 1) % LOADING_MSGS.length; setLoadingMsg(LOADING_MSGS[idx]) }, 700)
+    return () => clearInterval(iv)
   }, [searching])
 
-  /* ── Real API fetch ── */
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+  }, [termLines])
+
+  const log = (text, type = 'info') => {
+    setTermLines(prev => [...prev, { text, type, id: Date.now() + Math.random() }])
+  }
+
+  const clearAll = () => {
+    setTermLines([])
+    setIpResult(null)
+    setDnsResult(null)
+    setWaybackResult(null)
+    setMacResult(null)
+    setError(null)
+    setDetectedType(null)
+  }
+
+  /* ── MAIN EXECUTE ── */
   const executeSearch = async () => {
-    const ip = query.trim()
-    if (!ip) return
+    const raw = query.trim()
+    if (!raw) return
+    const type = detectType(raw)
+    if (!type) return
+
+    // Handle commands
+    if (type === 'cmd-clear') { clearAll(); log('> clear', 'cmd'); log('[SYS] Terminal cleared.', 'success'); return }
+    if (type === 'cmd-whoami') { log('> whoami', 'cmd'); log('root@vip-alejandro', 'success'); return }
 
     setSearching(true)
-    setResult(null)
     setError(null)
-    setTerminalLines([])
+    setIpResult(null)
+    setDnsResult(null)
+    setWaybackResult(null)
+    setMacResult(null)
+    setDetectedType(type)
 
-    // Add terminal output lines during fetch
-    const addLine = (text, type = 'info') => {
-      setTerminalLines(prev => [...prev, { text, type, id: Date.now() + Math.random() }])
-    }
-
-    addLine(`[CMD] > shodan host ${ip}`, 'cmd')
-    addLine(`[NET] Establishing connection to target...`)
+    log(`> scan ${raw}`, 'cmd')
+    log(`[SYS] Input type detected: ${type.toUpperCase()}`)
 
     try {
-      const response = await fetch(`https://ipapi.co/${ip}/json/`)
-
-      addLine(`[NET] HTTP ${response.status} — Response received`)
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
-
-      const data = await response.json()
-
-      // ipapi.co returns { error: true, reason: "..." } for invalid IPs
-      if (data.error) {
-        throw new Error(data.reason || 'Invalid IP address')
-      }
-
-      addLine(`[OSINT] Extracting intelligence data...`)
-      addLine(`[GEO] Geolocation resolved: ${data.city}, ${data.country_name}`, 'success')
-      addLine(`[ORG] ISP identified: ${data.org}`, 'success')
-      addLine(`[ASN] Autonomous System: ${data.asn}`, 'success')
-      addLine(`[DONE] Intelligence extraction complete`, 'success')
-
-      // Short delay for dramatic effect before showing results
-      await new Promise(resolve => setTimeout(resolve, 600))
-
-      setResult({
-        ip: data.ip || ip,
-        city: data.city || 'Unknown',
-        region: data.region || 'Unknown',
-        country: data.country_name || 'Unknown',
-        countryCode: data.country_code || '--',
-        org: data.org || 'Unknown',
-        asn: data.asn || 'N/A',
-        timezone: data.timezone || 'N/A',
-        latitude: data.latitude || 0,
-        longitude: data.longitude || 0,
-        postal: data.postal || 'N/A',
-        network: data.network || 'N/A',
-      })
-    } catch (err) {
-      addLine(`[ERROR] ${err.message}`, 'error')
-      addLine(`[ABORT] Target unreachable or protected`, 'error')
-      setError('[ ERROR: OBJETIVO INALCANZABLE O PROTEGIDO ]')
+      if (type === 'ip') await scanIP(raw)
+      else if (type === 'domain') await scanDomain(raw)
+      else if (type === 'mac') await scanMAC(raw)
+    } catch (e) {
+      log(`[FAIL] ${e.message}`, 'error')
+      setError('[ ERROR DE CONEXIÓN CON EL SATÉLITE ]')
     } finally {
       setSearching(false)
     }
   }
 
+  /* ── IP Scan ── */
+  const scanIP = async (ip) => {
+    log(`[NET] Connecting to ipapi.co...`)
+    const res = await fetch(`https://ipapi.co/${ip}/json/`)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const d = await res.json()
+    if (d.error) throw new Error(d.reason || 'Invalid IP')
+    log(`[GEO] Located: ${d.city}, ${d.country_name}`, 'success')
+    log(`[ORG] ISP: ${d.org}`, 'success')
+    log(`[ASN] ${d.asn}`, 'success')
+    log(`[DONE] IP intelligence complete`, 'success')
+    setIpResult({ ip: d.ip || ip, city: d.city || '?', region: d.region || '?', country: d.country_name || '?', countryCode: d.country_code || '--', org: d.org || '?', asn: d.asn || 'N/A', timezone: d.timezone || 'N/A', lat: d.latitude || 0, lon: d.longitude || 0, postal: d.postal || 'N/A', network: d.network || 'N/A' })
+  }
+
+  /* ── Domain Scan (DNS + Wayback) ── */
+  const scanDomain = async (raw) => {
+    const domain = extractDomain(raw)
+    log(`[DNS] Resolving ${domain}...`)
+
+    // DNS lookup
+    try {
+      const res = await fetch(`https://networkcalc.com/api/dns/lookup/${domain}`)
+      if (!res.ok) throw new Error(`DNS HTTP ${res.status}`)
+      const d = await res.json()
+      const records = d.records || {}
+      const aRecords = (records.A || []).map(r => r.address || r.value || JSON.stringify(r))
+      const mxRecords = (records.MX || []).map(r => r.exchange || r.value || JSON.stringify(r))
+      log(`[DNS] A records: ${aRecords.length} found`, 'success')
+      log(`[DNS] MX records: ${mxRecords.length} found`, 'success')
+      setDnsResult({ domain, aRecords, mxRecords, raw: records })
+    } catch (e) {
+      log(`[DNS] Failed: ${e.message}`, 'error')
+      setDnsResult({ domain, aRecords: [], mxRecords: [], error: e.message })
+    }
+
+    // Wayback Machine
+    log(`[ARCHIVE] Querying Wayback Machine...`)
+    try {
+      const res = await fetch(`https://archive.org/wayback/available?url=${domain}`)
+      if (!res.ok) throw new Error(`Wayback HTTP ${res.status}`)
+      const d = await res.json()
+      const snap = d.archived_snapshots?.closest
+      if (snap && snap.url) {
+        log(`[ARCHIVE] Snapshot found: ${snap.timestamp}`, 'success')
+        setWaybackResult({ available: true, url: snap.url, timestamp: snap.timestamp, status: snap.status })
+      } else {
+        log(`[ARCHIVE] No snapshots available`, 'warn')
+        setWaybackResult({ available: false })
+      }
+    } catch (e) {
+      log(`[ARCHIVE] Failed: ${e.message}`, 'error')
+      setWaybackResult({ available: false, error: e.message })
+    }
+    log(`[DONE] Domain reconnaissance complete`, 'success')
+  }
+
+  /* ── MAC Scan ── */
+  const scanMAC = async (mac) => {
+    log(`[HW] Looking up MAC vendor...`)
+    const res = await fetch(`https://api.maclookup.app/v2/macs/${mac}`)
+    if (!res.ok) throw new Error(`MAC HTTP ${res.status}`)
+    const d = await res.json()
+    const company = d.company || 'Unknown Vendor'
+    log(`[+] HARDWARE VENDOR DETECTADO: ${company}`, 'success')
+    log(`[DONE] MAC lookup complete`, 'success')
+    setMacResult({ mac, company, country: d.country || 'N/A', blockType: d.blockType || 'N/A', updated: d.updated || 'N/A' })
+  }
+
+  const inputType = query.trim() ? detectType(query.trim()) : null
+
   return (
     <div className="space-y-4">
-      {/* Module Header */}
+      {/* Header */}
       <div className="bg-cyber-dark/80 backdrop-blur-sm rounded-lg cyber-border p-6">
         <div className="flex items-center gap-4 mb-4">
           <div className="p-3 bg-neon-blue/20 rounded-lg">
             <Search className="w-8 h-8 text-neon-blue" />
           </div>
           <div>
-            <h2 className="text-2xl font-display font-bold neon-text-blue">SHODAN</h2>
-            <p className="text-sm text-gray-400">IP Intelligence & Geolocation Scanner</p>
+            <h2 className="text-2xl font-display font-bold neon-text-blue">OSINT RECON</h2>
+            <p className="text-sm text-gray-400">Multi-Target Intelligence Scanner</p>
           </div>
           <div className="ml-auto flex items-center gap-2 px-3 py-1 rounded bg-neon-green/10 border border-neon-green/30">
             <Activity className="w-3.5 h-3.5 text-neon-green" />
-            <span className="text-xs text-neon-green font-mono">LIVE API</span>
+            <span className="text-xs text-neon-green font-mono">LIVE</span>
           </div>
         </div>
 
-        {/* Search Bar */}
+        {/* Search */}
         <div className="flex gap-3">
           <div className="flex-1 relative">
-            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-            <input
-              type="text"
-              value={query}
+            <Terminal className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+            <input type="text" value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && executeSearch()}
-              placeholder='Ingresa una IP: 8.8.8.8, 1.1.1.1, 142.250.80.46'
+              placeholder="IP, Dominio, MAC o comando (whoami / clear)"
               className="w-full bg-cyber-gray border border-gray-700 rounded-lg py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:border-neon-blue focus:outline-none focus:ring-1 focus:ring-neon-blue transition-all font-mono"
             />
           </div>
-          <button
-            onClick={executeSearch}
-            disabled={searching || !query.trim()}
-            className="px-6 py-3 bg-neon-blue/20 hover:bg-neon-blue/30 border border-neon-blue rounded-lg text-neon-blue font-bold transition-all glow-button disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-          >
-            {searching ? 'SCANNING...' : 'SEARCH'}
+          <button onClick={executeSearch} disabled={searching || !query.trim()}
+            className="px-6 py-3 bg-neon-blue/20 hover:bg-neon-blue/30 border border-neon-blue rounded-lg text-neon-blue font-bold transition-all glow-button disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+            {searching ? 'SCANNING...' : 'EXECUTE'}
           </button>
         </div>
 
-        {/* Quick IPs */}
-        <div className="flex flex-wrap gap-2 mt-4">
+        {/* Type indicator + Quick buttons */}
+        <div className="flex items-center gap-3 mt-3 flex-wrap">
+          {inputType && !['cmd-clear','cmd-whoami'].includes(inputType) && (
+            <span className="text-xs font-mono px-2 py-0.5 rounded bg-neon-purple/20 text-neon-purple border border-neon-purple/30">
+              DETECTED: {inputType.toUpperCase()}
+            </span>
+          )}
           <span className="text-xs text-gray-500">Quick:</span>
-          {['8.8.8.8', '1.1.1.1', '142.250.80.46', '208.67.222.222', '9.9.9.9'].map((ip) => (
-            <button
-              key={ip}
-              onClick={() => setQuery(ip)}
-              className="px-3 py-1 bg-cyber-gray hover:bg-gray-700 border border-gray-600 rounded text-xs text-gray-400 hover:text-white transition-all font-mono"
-            >
-              {ip}
+          {['8.8.8.8','google.com','00:1A:2B:3C:4D:5E','whoami'].map(q => (
+            <button key={q} onClick={() => setQuery(q)}
+              className="px-2.5 py-1 bg-cyber-gray hover:bg-gray-700 border border-gray-600 rounded text-xs text-gray-400 hover:text-white transition-all font-mono">
+              {q}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Loading State — Hacker Glitch */}
+      {/* Loading */}
       <AnimatePresence>
         {searching && (
-          <motion.div
-            initial={{ opacity: 0, scaleY: 0.8 }}
-            animate={{ opacity: 1, scaleY: 1 }}
-            exit={{ opacity: 0, scaleY: 0.8 }}
-            className="bg-cyber-dark/90 backdrop-blur-sm rounded-lg cyber-border p-8 text-center overflow-hidden relative"
-          >
-            {/* Scan line effect inside loading */}
+          <motion.div initial={{ opacity: 0, scaleY: 0.8 }} animate={{ opacity: 1, scaleY: 1 }} exit={{ opacity: 0, scaleY: 0.8 }}
+            className="bg-cyber-dark/90 backdrop-blur-sm rounded-lg cyber-border p-8 text-center relative overflow-hidden">
             <div className="absolute inset-0 pointer-events-none">
-              <div
-                className="absolute w-full h-px bg-neon-green/30"
-                style={{ animation: 'scan 1.5s linear infinite' }}
-              />
+              <div className="absolute w-full h-px bg-neon-green/30" style={{ animation: 'scan 1.5s linear infinite' }} />
             </div>
-
-            <motion.div
-              animate={{ opacity: [1, 0.3, 1, 0.5, 1] }}
-              transition={{ duration: 0.8, repeat: Infinity }}
-              className="inline-block"
-            >
-              <p className="text-neon-green font-display text-lg neon-text tracking-widest">
-                {loadingMsg}
-              </p>
-            </motion.div>
-
+            <motion.p animate={{ opacity: [1, 0.3, 1, 0.5, 1] }} transition={{ duration: 0.8, repeat: Infinity }}
+              className="text-neon-green font-display text-lg neon-text tracking-widest">{loadingMsg}</motion.p>
             <div className="mt-4 flex justify-center gap-1">
               {[...Array(5)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="w-2 h-6 bg-neon-green/60 rounded-sm"
-                  animate={{ scaleY: [0.3, 1, 0.3] }}
-                  transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.1 }}
-                />
+                <motion.div key={i} className="w-2 h-6 bg-neon-green/60 rounded-sm"
+                  animate={{ scaleY: [0.3, 1, 0.3] }} transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.1 }} />
               ))}
             </div>
-
-            <p className="text-xs text-gray-600 mt-4 font-mono">
-              Querying ipapi.co intelligence database...
-            </p>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Error State */}
+      {/* Error */}
       <AnimatePresence>
         {error && !searching && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="bg-cyber-dark/90 backdrop-blur-sm rounded-lg border border-neon-red/50 p-6 text-center emergency-blink"
-          >
-            <motion.div
-              animate={{ opacity: [1, 0.4, 1] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="bg-cyber-dark/90 rounded-lg border border-neon-red/50 p-6 text-center emergency-blink">
+            <motion.div animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 1.5, repeat: Infinity }}>
               <AlertTriangle className="w-10 h-10 text-neon-red mx-auto mb-3" />
-              <p className="text-neon-red font-display text-lg neon-text-red tracking-wider">
-                {error}
+              <p className="text-neon-red font-display text-lg neon-text-red tracking-wider">{error}</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ══════ IP RESULTS ══════ */}
+      <AnimatePresence>
+        {ipResult && !searching && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-cyber-dark/90 backdrop-blur-sm rounded-lg cyber-border p-6">
+            <SectionHeader icon={MapPin} title="IP GEOLOCATION — TARGET ACQUIRED" color="text-neon-green" badge="ipapi.co" />
+            <div className="bg-black/50 rounded-lg p-4 border border-gray-800">
+              <TypewriterLine label="IP" value={ipResult.ip} delay={0} color="text-neon-blue" />
+              <TypewriterLine label="CITY" value={ipResult.city} delay={200} />
+              <TypewriterLine label="REGION" value={ipResult.region} delay={400} />
+              <TypewriterLine label="COUNTRY" value={`${ipResult.country} (${ipResult.countryCode})`} delay={600} />
+              <TypewriterLine label="ORG / ISP" value={ipResult.org} delay={800} color="text-neon-purple" />
+              <TypewriterLine label="ASN" value={ipResult.asn} delay={1000} color="text-neon-yellow" />
+              <TypewriterLine label="NETWORK" value={ipResult.network} delay={1200} />
+              <TypewriterLine label="TIMEZONE" value={ipResult.timezone} delay={1400} />
+              <TypewriterLine label="COORDS" value={`${ipResult.lat}, ${ipResult.lon}`} delay={1600} color="text-neon-blue" />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ══════ DNS RESULTS ══════ */}
+      <AnimatePresence>
+        {dnsResult && !searching && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-cyber-dark/90 backdrop-blur-sm rounded-lg cyber-border p-6">
+            <SectionHeader icon={Globe} title="DNS RECONNAISSANCE" color="text-neon-blue" badge="networkcalc.com" />
+            <div className="bg-black/50 rounded-lg p-4 border border-gray-800">
+              <TypewriterLine label="DOMAIN" value={dnsResult.domain} delay={0} color="text-neon-blue" />
+              {dnsResult.aRecords.length > 0 ? (
+                dnsResult.aRecords.map((r, i) => (
+                  <TypewriterLine key={`a-${i}`} label={`A REC [${i + 1}]`} value={r} delay={200 + i * 200} />
+                ))
+              ) : (
+                <TypewriterLine label="A REC" value="No A records found" delay={200} color="text-gray-500" />
+              )}
+              {dnsResult.mxRecords.length > 0 ? (
+                dnsResult.mxRecords.map((r, i) => (
+                  <TypewriterLine key={`mx-${i}`} label={`MX [${i + 1}]`} value={r} delay={600 + i * 200} color="text-neon-purple" />
+                ))
+              ) : (
+                <TypewriterLine label="MX" value="No MX records found" delay={600} color="text-gray-500" />
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ══════ WAYBACK RESULTS ══════ */}
+      <AnimatePresence>
+        {waybackResult && !searching && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-cyber-dark/90 backdrop-blur-sm rounded-lg cyber-border p-6">
+            <SectionHeader icon={Archive} title="WAYBACK MACHINE — ARCHIVO HISTÓRICO" color="text-neon-yellow" badge="archive.org" />
+            <div className="bg-black/50 rounded-lg p-4 border border-gray-800">
+              {waybackResult.available ? (
+                <>
+                  <TypewriterLine label="STATUS" value="SNAPSHOT ENCONTRADO" delay={0} color="text-neon-green" />
+                  <TypewriterLine label="TIMESTAMP" value={waybackResult.timestamp} delay={200} color="text-neon-yellow" />
+                  <TypewriterLine label="URL" value={waybackResult.url} delay={400} color="text-neon-blue" />
+                  <div className="mt-3">
+                    <a href={waybackResult.url} target="_blank" rel="noopener noreferrer"
+                      className="text-xs text-neon-blue hover:underline font-mono">
+                      [ ABRIR SNAPSHOT → ]
+                    </a>
+                  </div>
+                </>
+              ) : (
+                <TypewriterLine label="STATUS" value="No hay snapshots disponibles para este dominio" delay={0} color="text-gray-500" />
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ══════ MAC RESULTS ══════ */}
+      <AnimatePresence>
+        {macResult && !searching && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-cyber-dark/90 backdrop-blur-sm rounded-lg cyber-border p-6">
+            <SectionHeader icon={Cpu} title="HARDWARE VENDOR — MAC LOOKUP" color="text-neon-purple" badge="maclookup.app" />
+            <div className="bg-black/50 rounded-lg p-4 border border-gray-800">
+              <TypewriterLine label="MAC" value={macResult.mac} delay={0} color="text-neon-blue" />
+              <TypewriterLine label="VENDOR" value={macResult.company} delay={300} color="text-neon-green" />
+              <TypewriterLine label="COUNTRY" value={macResult.country} delay={600} />
+              <TypewriterLine label="BLOCK" value={macResult.blockType} delay={900} color="text-neon-yellow" />
+            </div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }}
+              className="mt-4 p-3 bg-neon-green/10 border border-neon-green/30 rounded-lg">
+              <p className="text-neon-green font-mono text-sm neon-text">
+                [+] HARDWARE VENDOR DETECTADO: {macResult.company}
               </p>
             </motion.div>
-            <p className="text-xs text-gray-500 mt-3 font-mono">
-              Verifica la dirección IP e intenta de nuevo
-            </p>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Results — Typewriter Reveal */}
-      <AnimatePresence>
-        {result && !searching && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.4 }}
-          >
-            {/* Intelligence Header */}
-            <div className="bg-cyber-dark/90 backdrop-blur-sm rounded-lg cyber-border p-6 mb-4">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-3 h-3 rounded-full bg-neon-green animate-pulse" />
-                <h3 className="text-sm font-display text-neon-green neon-text tracking-widest">
-                  INTELLIGENCE REPORT — TARGET ACQUIRED
-                </h3>
-              </div>
-
-              <div className="bg-black/50 rounded-lg p-5 border border-gray-800">
-                <TypewriterLine label="IP" value={result.ip} delay={0} color="text-neon-blue" />
-                <TypewriterLine label="CITY" value={result.city} delay={300} />
-                <TypewriterLine label="REGION" value={result.region} delay={600} />
-                <TypewriterLine label="COUNTRY" value={`${result.country} (${result.countryCode})`} delay={900} />
-                <TypewriterLine label="ORG / ISP" value={result.org} delay={1200} color="text-neon-purple" />
-                <TypewriterLine label="ASN" value={result.asn} delay={1500} color="text-neon-yellow" />
-                <TypewriterLine label="NETWORK" value={result.network} delay={1800} />
-                <TypewriterLine label="TIMEZONE" value={result.timezone} delay={2100} />
-                <TypewriterLine label="COORDS" value={`${result.latitude}, ${result.longitude}`} delay={2400} color="text-neon-blue" />
-                <TypewriterLine label="POSTAL" value={result.postal} delay={2700} />
-              </div>
-            </div>
-
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="bg-cyber-dark/80 backdrop-blur-sm rounded-lg cyber-border p-4"
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-neon-blue/20 rounded-lg">
-                    <MapPin className="w-5 h-5 text-neon-blue" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Location</p>
-                    <p className="text-sm font-bold text-gray-300">{result.city}, {result.country}</p>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500 font-mono">{result.latitude}, {result.longitude}</p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 }}
-                className="bg-cyber-dark/80 backdrop-blur-sm rounded-lg cyber-border p-4"
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-neon-purple/20 rounded-lg">
-                    <Building2 className="w-5 h-5 text-neon-purple" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Organization</p>
-                    <p className="text-sm font-bold text-gray-300">{result.org}</p>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500 font-mono">ASN: {result.asn}</p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.9 }}
-                className="bg-cyber-dark/80 backdrop-blur-sm rounded-lg cyber-border p-4"
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-neon-green/20 rounded-lg">
-                    <Wifi className="w-5 h-5 text-neon-green" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Network</p>
-                    <p className="text-sm font-bold text-gray-300">{result.network}</p>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500 font-mono">TZ: {result.timezone}</p>
-              </motion.div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Terminal Output Log */}
+      {/* ══════ TERMINAL OUTPUT ══════ */}
       <div className="bg-cyber-dark/80 backdrop-blur-sm rounded-lg cyber-border overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-700 bg-cyber-gray/50 flex items-center gap-2">
           <Server className="w-4 h-4 text-gray-400" />
@@ -365,68 +405,64 @@ const ShodanModule = ({ isScanning }) => {
             <div className="w-3 h-3 rounded-full bg-neon-green/70" />
           </div>
         </div>
-        <div className="p-4 h-44 overflow-y-auto font-mono text-xs bg-black/50">
-          {terminalLines.length === 0 ? (
+        <div ref={scrollRef} className="p-4 h-48 overflow-y-auto font-mono text-xs bg-black/50">
+          {termLines.length === 0 ? (
             <div className="text-gray-600">
-              <p>{'>'} Shodan IP Intelligence Scanner ready...</p>
-              <p>{'>'} Connected to ipapi.co API</p>
-              <p>{'>'} Enter an IP address to begin reconnaissance</p>
+              <p>{'>'} OSINT Multi-Scanner v2.0 ready...</p>
+              <p>{'>'} Supported: IP | Domain | MAC | Commands</p>
+              <p>{'>'} APIs: ipapi.co | networkcalc | archive.org | maclookup</p>
+              <p>{'>'} Type <span className="text-neon-blue">whoami</span> or <span className="text-neon-blue">clear</span></p>
               <p className="text-neon-blue/50">{'>'} Awaiting target_</p>
             </div>
           ) : (
             <AnimatePresence initial={false}>
-              {terminalLines.map((line) => (
-                <motion.div
-                  key={line.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className={`py-0.5 ${
-                    line.type === 'error' ? 'text-neon-red' :
-                    line.type === 'success' ? 'text-neon-green' :
-                    line.type === 'cmd' ? 'text-neon-blue' :
-                    'text-gray-400'
-                  }`}
-                >
-                  {line.text}
+              {termLines.map(l => (
+                <motion.div key={l.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                  className={`py-0.5 ${l.type === 'error' ? 'text-neon-red' : l.type === 'success' ? 'text-neon-green' : l.type === 'cmd' ? 'text-neon-blue' : l.type === 'warn' ? 'text-neon-yellow' : 'text-gray-400'}`}>
+                  {l.text}
                 </motion.div>
               ))}
-              {!searching && terminalLines.length > 0 && (
-                <p className="text-neon-blue/60 mt-2">{'>'} Ready for next target_</p>
-              )}
+              {!searching && <p className="text-neon-blue/60 mt-1">{'>'} Ready_</p>}
             </AnimatePresence>
           )}
         </div>
       </div>
 
-      {/* Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Info cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-cyber-dark/80 backdrop-blur-sm rounded-lg cyber-border p-4">
           <h3 className="text-sm font-display text-gray-300 mb-2 flex items-center gap-2">
-            <Shield className="w-4 h-4 text-neon-blue" />
-            DATA EXTRACTED
+            <Shield className="w-4 h-4 text-neon-blue" />CAPABILITIES
           </h3>
           <ul className="text-xs text-gray-400 space-y-1 font-mono">
-            <li>• IP Address & Network Range</li>
-            <li>• City, Region & Country</li>
-            <li>• ISP / Organization</li>
-            <li>• Autonomous System Number (ASN)</li>
-            <li>• Timezone & Postal Code</li>
-            <li>• GPS Coordinates</li>
+            <li>• IP Geolocation & ISP</li>
+            <li>• DNS A & MX Records</li>
+            <li>• Wayback Machine Archive</li>
+            <li>• MAC Vendor Lookup</li>
+            <li>• Console Commands</li>
           </ul>
         </div>
         <div className="bg-cyber-dark/80 backdrop-blur-sm rounded-lg cyber-border p-4">
           <h3 className="text-sm font-display text-gray-300 mb-2 flex items-center gap-2">
-            <Globe className="w-4 h-4 text-neon-purple" />
-            API STATUS
+            <Globe className="w-4 h-4 text-neon-purple" />APIS CONNECTED
           </h3>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
-            <span className="text-xs text-neon-green font-mono">CONNECTED — ipapi.co</span>
+          <div className="space-y-1.5">
+            {['ipapi.co','networkcalc.com','archive.org','maclookup.app'].map(api => (
+              <div key={api} className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" />
+                <span className="text-xs text-neon-green/80 font-mono">{api}</span>
+              </div>
+            ))}
           </div>
-          <p className="text-xs text-gray-400">
-            Datos en tiempo real. Sin API key requerida para consultas básicas.
-          </p>
+        </div>
+        <div className="bg-cyber-dark/80 backdrop-blur-sm rounded-lg cyber-border p-4">
+          <h3 className="text-sm font-display text-gray-300 mb-2 flex items-center gap-2">
+            <Terminal className="w-4 h-4 text-neon-green" />COMMANDS
+          </h3>
+          <div className="space-y-1 text-xs font-mono">
+            <p><span className="text-neon-blue">whoami</span> <span className="text-gray-500">→ identity</span></p>
+            <p><span className="text-neon-blue">clear</span> <span className="text-gray-500">→ reset terminal</span></p>
+          </div>
         </div>
       </div>
     </div>
