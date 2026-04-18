@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Shield, Bug, FileText, Play, Square, Target, Globe, Lock, AlertTriangle, Database, Users, Plugin } from 'lucide-react'
+import { Shield, Bug, FileText, Play, Square, Target, Globe, Lock, AlertTriangle, Database, Users, Plug, Settings } from 'lucide-react'
 
 const WPScanModule = ({ isScanning }) => {
   const [targetUrl, setTargetUrl] = useState('')
@@ -230,7 +230,7 @@ const WPScanModule = ({ isScanning }) => {
             <div className="bg-cyber-dark/80 backdrop-blur-sm rounded-lg cyber-border p-4">
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2 bg-neon-purple/20 rounded-lg">
-                  <Plugin className="w-5 h-5 text-neon-purple" />
+                  <Plug className="w-5 h-5 text-neon-purple" />
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Theme</p>
@@ -257,7 +257,7 @@ const WPScanModule = ({ isScanning }) => {
           {/* Plugins */}
           <div className="bg-cyber-dark/80 backdrop-blur-sm rounded-lg cyber-border overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-700 bg-cyber-gray/50 flex items-center gap-2">
-              <Plugin className="w-4 h-4 text-neon-purple" />
+              <Plug className="w-4 h-4 text-neon-purple" />
               <span className="text-sm font-display text-gray-300">PLUGINS DETECTED</span>
             </div>
             <div className="divide-y divide-gray-700">
